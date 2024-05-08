@@ -83,16 +83,17 @@ class Night:
         if verbose: print(f"Cutoff of wavelength range completed.")
         return self
         
-    def generate(self, k, samples_per_night, out_path, date):
+    def generate(self, k, samples_per_night, sampling_ratio, out_path, date):
         
         print(f"Generating {samples_per_night} samples per night with {k} observations combined...")
         # generate combinations of n observations taken k at a time (n choose k)
         # generator offers great performance but has a sequential nature
         cb = list(itertools.combinations(range(len(self.observations)), k)) # we realize the generator 
         n_permutations = special.comb(len(self.observations), k)
-        print(f"Total number of permutations: {n_permutations}")
+        print(f"Total number of permutations: {int(n_permutations)}")
         
         n_nights = int(n_permutations / samples_per_night)
+        n_nights = int(n_nights * sampling_ratio)
         limit = n_nights * samples_per_night
         print(f"Limiting to {limit} samples. (nights: {n_nights})")
         

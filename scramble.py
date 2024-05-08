@@ -12,8 +12,9 @@ from tqdm import tqdm
 ap = argparse.ArgumentParser()
 ap.add_argument("-d", "--dataset", required=True, help="path to data directory")
 ap.add_argument("-o", "--output", required=True, help="path to output directory")
-ap.add_argument("-s", "--samples_per_night", required=True, type=int, default=58, help="number of samples to generate per night")
+ap.add_argument("-s", "--samples-per-night", required=True, type=int, default=58, help="number of samples to generate per night")
 ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of observations to combine")
+ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
 ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
 ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
 args = vars(ap.parse_args())
@@ -24,6 +25,8 @@ cut_begin = args["cut_begin"]
 cut_end = args["cut_end"]
 samples_per_night = args["samples_per_night"]
 k = args["k"]
+sampling_ratio = args["sampling_ratio"]
+
 
 # print input parameters
 print(f"Dataset: {dataset}")
@@ -52,10 +55,10 @@ for night_path in night_paths:
     
     # cutoff wavelength ranges eventually
     night.cutoff()
-    
+
     # generate samples of night from this night
     date = night_path.split(os.sep)[-1]
-    generated_nights = night.generate(k=k, samples_per_night=samples_per_night, out_path=output, date=date)
+    generated_nights = night.generate(k=k, samples_per_night=samples_per_night, sampling_ratio=sampling_ratio, out_path=output, date=date)
     
     """
     # save generated nights using np.savedz_compressed
