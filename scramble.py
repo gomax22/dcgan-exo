@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from pathlib import Path
 from classes.night import Night
-
+import multiprocessing
 from tqdm import tqdm
 
 ap = argparse.ArgumentParser()
@@ -17,6 +17,7 @@ ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of
 ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
 ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
 ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
+ap.add_argument("-c", "--concurrency", required=False, default=True, type=bool, help="use concurrency")
 args = vars(ap.parse_args())
 
 dataset = args["dataset"]
@@ -26,6 +27,7 @@ cut_end = args["cut_end"]
 samples_per_night = args["samples_per_night"]
 k = args["k"]
 sampling_ratio = args["sampling_ratio"]
+concurrency = args["concurrency"]
 
 
 # print input parameters
@@ -33,8 +35,10 @@ print(f"Dataset: {dataset}")
 print(f"Output: {output}")
 print(f"Samples per night: {samples_per_night}")
 print(f"K: {k}")
+print(f"Sampling ratio: {sampling_ratio}")
 print(f"Cut begin: {cut_begin}")
 print(f"Cut end: {cut_end}")
+print(f"Concurrency: {concurrency} (no. of cores: {multiprocessing.cpu_count()})")
 
 # create output directory
 if not Path(output).exists():
@@ -58,7 +62,13 @@ for night_path in night_paths:
 
     # generate samples of night from this night
     date = night_path.split(os.sep)[-1]
-    generated_nights = night.generate(k=k, samples_per_night=samples_per_night, sampling_ratio=sampling_ratio, out_path=output, date=date)
+    generated_nights = night.generate(
+        k=k, 
+        samples_per_night=samples_per_night, 
+        sampling_ratio=sampling_ratio, 
+        out_path=output, 
+        date=date,
+        concurrency=concurrency)
     
     """
     # save generated nights using np.savedz_compressed

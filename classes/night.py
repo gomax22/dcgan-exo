@@ -1,3 +1,4 @@
+import concurrent.futures
 import os
 from classes.observation import Observation
 import numpy as np
@@ -6,6 +7,7 @@ from tqdm import tqdm
 from scipy import interpolate, special
 import itertools
 from typing import List
+import concurrent
 
 class Night:
     def __init__(self, **kwargs):
@@ -82,41 +84,55 @@ class Night:
             obs.error = np.array(obs.error[idx_begin:idx_end], dtype=np.float32)
         if verbose: print(f"Cutoff of wavelength range completed.")
         return self
+    
+    def generate_night(self, combinations, out_path, date, idx):
         
-    def generate(self, k, samples_per_night, sampling_ratio, out_path, date):
+        samples = []
         
-        print(f"Generating {samples_per_night} samples per night with {k} observations combined...")
+        for c in combinations:    
+            samples.append(Observation.from_observations([self.observations[idx] for idx in c], self.wave_ref))
+        
+        night = Night.from_observations(samples, wave_ref=self.wave_ref, cutoff_begin=self.cutoff_begin, cutoff_end=self.cutoff_end) \
+            .interpolate(progress=False, verbose=False) \
+            .cutoff(verbose=False)
+            
+        night.save(out_path, date, idx)
+    
+    
+    def generate(self, k, samples_per_night, sampling_ratio, out_path, date, concurrency=True, verbose=True):
+        
+        if verbose: print(f"Generating {samples_per_night} samples per night with {k} observations combined...")
         # generate combinations of n observations taken k at a time (n choose k)
         # generator offers great performance but has a sequential nature
         cb = list(itertools.combinations(range(len(self.observations)), k)) # we realize the generator 
         n_permutations = special.comb(len(self.observations), k)
-        print(f"Total number of permutations: {int(n_permutations)}")
+        if verbose: print(f"Total number of permutations: {int(n_permutations)}")
         
         n_nights = int(n_permutations / samples_per_night)
         n_nights = int(n_nights * sampling_ratio)
         limit = n_nights * samples_per_night
-        print(f"Limiting to {limit} samples. (nights: {n_nights})")
+        if verbose: print(f"Limiting to {limit} samples. (nights: {n_nights})")
         
         # shuffle combinations
         random.shuffle(cb)
+        cb = cb[:limit]
         
-        pbar = tqdm(total=n_nights, desc="Generating nights...")
+        if concurrency:
+            pbar = tqdm(total=n_nights, desc="Generating nights...")
+            args = [(cb[idx*samples_per_night:(idx+1)*samples_per_night], out_path, date, idx) for idx in range(n_nights)]
         
-        for idx in range(n_nights):
-            samples = []
-            
-            for c in cb[idx*samples_per_night:(idx+1)*samples_per_night]:    
-                samples.append(Observation.from_observations([self.observations[idx] for idx in c], self.wave_ref))
+            with concurrent.futures.ProcessPoolExecutor() as executor:
+                futures = {executor.submit(self.generate_night, cbs, out_path, date, idx) for (cbs, out_path, date, idx) in args}
                 
-            # create 
-            night = Night.from_observations(samples, wave_ref=self.wave_ref, cutoff_begin=self.cutoff_begin, cutoff_end=self.cutoff_end) \
-                .interpolate(progress=False, verbose=False) \
-                .cutoff(verbose=False)
-                
-            night.save(out_path, date, idx)
-            
-            pbar.update(1)
-        pbar.close()
+                for future in concurrent.futures.as_completed(futures):
+                    pbar.update(1)
+            pbar.close()
+        else: 
+            pbar = tqdm(total=n_nights, desc="Generating nights...")
+            for idx in range(n_nights):
+                self.generate_night(cb[idx*samples_per_night:(idx+1)*samples_per_night], out_path, date, idx)
+                pbar.update(1)
+            pbar.close()
         
         
     def save(self, out_path, date, idx):
