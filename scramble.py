@@ -15,9 +15,11 @@ def main():
     ap.add_argument("-s", "--samples-per-night", required=True, type=int, default=58, help="number of samples to generate per night")
     ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of observations to combine")
     ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
+    ap.add_argument("-m", "--max-nights", required=False, default=10000, help="number of nights to generate")
     ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
     ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
     ap.add_argument("-c", "--concurrency", required=False, default=True, type=bool, help="use concurrency")
+    
     args = vars(ap.parse_args())
 
     dataset = args["dataset"]
@@ -27,7 +29,9 @@ def main():
     samples_per_night = args["samples_per_night"]
     k = args["k"]
     sampling_ratio = args["sampling_ratio"]
+    max_nights = args["max_nights"]
     concurrency = args["concurrency"]
+    
 
     # print input parameters
     print(f"Dataset: {dataset}")
@@ -64,7 +68,8 @@ def main():
     night.generate(
         k=k, 
         samples_per_night=samples_per_night, 
-        sampling_ratio=sampling_ratio, 
+        sampling_ratio=sampling_ratio,
+        max_nights=max_nights, 
         out_path=output, 
         date=date,
         concurrency=concurrency)

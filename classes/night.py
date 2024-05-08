@@ -99,7 +99,7 @@ class Night:
         night.save(out_path, date, idx)
     
     
-    def generate(self, k, samples_per_night, sampling_ratio, out_path, date, concurrency=True, verbose=True):
+    def generate(self, k, samples_per_night, sampling_ratio, out_path, date, max_nights=10000, concurrency=True, verbose=True):
         
         if verbose: print(f"Generating {samples_per_night} samples per night with {k} observations combined...")
         # generate combinations of n observations taken k at a time (n choose k)
@@ -109,9 +109,9 @@ class Night:
         if verbose: print(f"Total number of permutations: {int(n_permutations)}")
         
         n_nights = int(n_permutations / samples_per_night)
-        n_nights = int(n_nights * sampling_ratio)
+        n_nights = int(n_nights * sampling_ratio) if max_nights > int(n_nights * sampling_ratio) else max_nights
         limit = n_nights * samples_per_night
-        if verbose: print(f"Limiting to {limit} samples. (nights: {n_nights})")
+        if verbose: print(f"Limiting to {limit} samples. (nights: {n_nights}, max_nights: {max_nights})")
         
         # shuffle combinations
         random.shuffle(cb)
