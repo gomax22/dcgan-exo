@@ -1,58 +1,57 @@
 import os
 import argparse
 from astropy.io import fits
-import itertools
 import numpy as np
-import pickle
 from pathlib import Path
 from classes.night import Night
 import multiprocessing
 from tqdm import tqdm
 
-ap = argparse.ArgumentParser()
-ap.add_argument("-d", "--dataset", required=True, help="path to data directory")
-ap.add_argument("-o", "--output", required=True, help="path to output directory")
-ap.add_argument("-s", "--samples-per-night", required=True, type=int, default=58, help="number of samples to generate per night")
-ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of observations to combine")
-ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
-ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
-ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
-ap.add_argument("-c", "--concurrency", required=False, default=True, type=bool, help="use concurrency")
-args = vars(ap.parse_args())
 
-dataset = args["dataset"]
-output = args["output"]
-cut_begin = args["cut_begin"]
-cut_end = args["cut_end"]
-samples_per_night = args["samples_per_night"]
-k = args["k"]
-sampling_ratio = args["sampling_ratio"]
-concurrency = args["concurrency"]
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("-d", "--dataset", required=True, help="path to data directory")
+    ap.add_argument("-o", "--output", required=True, help="path to output directory")
+    ap.add_argument("-s", "--samples-per-night", required=True, type=int, default=58, help="number of samples to generate per night")
+    ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of observations to combine")
+    ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
+    ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
+    ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
+    ap.add_argument("-c", "--concurrency", required=False, default=True, type=bool, help="use concurrency")
+    args = vars(ap.parse_args())
 
+    dataset = args["dataset"]
+    output = args["output"]
+    cut_begin = args["cut_begin"]
+    cut_end = args["cut_end"]
+    samples_per_night = args["samples_per_night"]
+    k = args["k"]
+    sampling_ratio = args["sampling_ratio"]
+    concurrency = args["concurrency"]
 
-# print input parameters
-print(f"Dataset: {dataset}")
-print(f"Output: {output}")
-print(f"Samples per night: {samples_per_night}")
-print(f"K: {k}")
-print(f"Sampling ratio: {sampling_ratio}")
-print(f"Cut begin: {cut_begin}")
-print(f"Cut end: {cut_end}")
-print(f"Concurrency: {concurrency} (no. of cores: {multiprocessing.cpu_count()})")
+    # print input parameters
+    print(f"Dataset: {dataset}")
+    print(f"Output: {output}")
+    print(f"Samples per night: {samples_per_night}")
+    print(f"K: {k}")
+    print(f"Sampling ratio: {sampling_ratio}")
+    print(f"Cut begin: {cut_begin}")
+    print(f"Cut end: {cut_end}")
+    print(f"Concurrency: {concurrency} (no. of cores: {multiprocessing.cpu_count()})")
 
-# create output directory
-if not Path(output).exists():
-    Path(output).mkdir(parents=True, exist_ok=True)
+    # create output directory
+    if not Path(output).exists():
+        Path(output).mkdir(parents=True, exist_ok=True)
 
-# list nights stored in the data directory
-night_paths = [os.path.join(dataset, entry) for entry in os.listdir(dataset) if os.path.isdir(os.path.join(dataset, entry)) and entry != "tars"]
-print(f"Found {len(night_paths)} nights in the dataset directory")
+    # list nights stored in the data directory
+    # night_paths = [os.path.join(dataset, entry) for entry in os.listdir(dataset) if os.path.isdir(os.path.join(dataset, entry)) and entry != "tars"]
+    # print(f"Found {len(night_paths)} nights in the dataset directory")
 
-for night_path in night_paths:
-    print(f"\nProcessing night {night_path}")
+    # for night_path in night_paths:
+    print(f"\nProcessing night {dataset}")
 
     # get observations from night
-    night = Night.from_directory(night_path, cut_begin, cut_end)
+    night = Night.from_directory(dataset, cut_begin, cut_end)
     
     # interpolate the night observations
     night.interpolate()
@@ -61,8 +60,8 @@ for night_path in night_paths:
     night.cutoff()
 
     # generate samples of night from this night
-    date = night_path.split(os.sep)[-1]
-    generated_nights = night.generate(
+    date = dataset.split(os.sep)[-1]
+    night.generate(
         k=k, 
         samples_per_night=samples_per_night, 
         sampling_ratio=sampling_ratio, 
@@ -70,6 +69,8 @@ for night_path in night_paths:
         date=date,
         concurrency=concurrency)
     
+    # print("\n")
+        
     """
     # save generated nights using np.savedz_compressed
     
@@ -82,4 +83,6 @@ for night_path in night_paths:
     pbar.close()
     """    
     
-    
+
+if __name__ == "__main__":
+    main()
