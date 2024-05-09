@@ -99,19 +99,30 @@ class Night:
         night.save(out_path, date, idx)
     
     
-    def generate(self, k, samples_per_night, sampling_ratio, out_path, date, max_nights=10000, concurrency=True, verbose=True):
+    def generate(self, k, samples_per_night, sampling_ratio, max_nights, out_path, date, concurrency=True, verbose=True):
         
         if verbose: print(f"Generating {samples_per_night} samples per night with {k} observations combined...")
         # generate combinations of n observations taken k at a time (n choose k)
         # generator offers great performance but has a sequential nature
         cb = list(itertools.combinations(range(len(self.observations)), k)) # we realize the generator 
         n_permutations = special.comb(len(self.observations), k)
-        if verbose: print(f"Total number of permutations: {int(n_permutations)}")
+        if verbose: print(f"Total number of possible permutations: {int(n_permutations)} (n choose k, n={len(self.observations)}, k={k})")
         
+        # total number of possible nights
         n_nights = int(n_permutations / samples_per_night)
-        n_nights = int(n_nights * sampling_ratio) if max_nights > int(n_nights * sampling_ratio) else max_nights
+        if verbose: print(f"Total number of possible nights: {n_nights} (max_nights: {max_nights})")
+        
+        # limit the number of nights to generate
+        if sampling_ratio != 1.0: 
+            n_nights = int(n_nights * sampling_ratio)
+            if verbose: print(f"Sampling ratio: {sampling_ratio} -> n_nights: {n_nights}")
+        
+        # limit the number of nights to generate up to max_nights
+        if max_nights is not None and max_nights < n_nights:
+            n_nights = max_nights
+            
         limit = n_nights * samples_per_night
-        if verbose: print(f"Limiting to {limit} samples. (nights: {n_nights}, max_nights: {max_nights})")
+        if verbose: print(f"Limiting to {limit} samples. (nights: {n_nights}, samples per night: {samples_per_night})")
         
         # shuffle combinations
         random.shuffle(cb)

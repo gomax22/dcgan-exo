@@ -14,10 +14,10 @@ def main():
     ap.add_argument("-o", "--output", required=True, help="path to output directory")
     ap.add_argument("-s", "--samples-per-night", required=True, type=int, default=58, help="number of samples to generate per night")
     ap.add_argument("-k", "--k", required=True, default=5, type=int, help="number of observations to combine")
-    ap.add_argument("-r", "--sampling-ratio", required=False, default=0.25, type=float, help="sampling ratio")
-    ap.add_argument("-m", "--max-nights", required=False, default=10000, help="number of nights to generate")
-    ap.add_argument("-b", "--cut-begin", required=False, default=None, help="cut beginning of wavelength range")
-    ap.add_argument("-e", "--cut-end", required=False, default=None, help="cut end of wavelength range")
+    ap.add_argument("-r", "--sampling-ratio", required=False, default=1.0, type=float, help="sampling ratio")
+    ap.add_argument("-m", "--max-nights", required=False, default=None, type=int, help="number of nights to generate")
+    ap.add_argument("-b", "--cut-begin", required=False, default=None, type=float, help="cut beginning of wavelength range")
+    ap.add_argument("-e", "--cut-end", required=False, default=None, type=float, help="cut end of wavelength range")
     ap.add_argument("-c", "--concurrency", required=False, default=True, type=bool, help="use concurrency")
     
     args = vars(ap.parse_args())
@@ -27,9 +27,12 @@ def main():
     cut_begin = args["cut_begin"]
     cut_end = args["cut_end"]
     samples_per_night = args["samples_per_night"]
+    samples_per_night = samples_per_night if samples_per_night is not None and samples_per_night > 0 else 58
     k = args["k"]
     sampling_ratio = args["sampling_ratio"]
+    sampling_ratio = sampling_ratio if sampling_ratio is not None and sampling_ratio > 0 else 1.0
     max_nights = args["max_nights"]
+    max_nights = max_nights if max_nights is not None and max_nights > 0 else None
     concurrency = args["concurrency"]
     
 
